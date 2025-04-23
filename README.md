@@ -38,7 +38,6 @@ deadlines or prepping assets for Unreal, this tool helps you stay organized with
      ```
 
    - Set the icon to the included `scene_cleaner_icon.png` (found in the repo).
-   - (Optional) Name the button and give it a tooltip for clarity.
 
 ---
 
