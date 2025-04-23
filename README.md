@@ -50,6 +50,6 @@ MIT License — feel free to use, modify, and share!
 
 ## Author
 
-Made by [Raluca Cocos](https://github.com/cutebutscorpio) — check out my other work on [ArtStation](https://www.artstation.com/ralucacocos)!
+Made by [Raluca Cocos](https://github.com/raluca-cocos) — check out my other work on [ArtStation](https://www.artstation.com/ralucacocos)!
 
 ---
