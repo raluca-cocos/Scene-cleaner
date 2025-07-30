@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QHBoxLayout, QPushB
                                QLineEdit, QRadioButton, QButtonGroup)
 import os
 
+#hi!! welcome to my code!! made by Raluca Cocos https://www.artstation.com/ralucacocos
+
 class UIWindow:
     def __init__(self):
 
@@ -35,9 +37,14 @@ class UIWindow:
         self.window_cleaner()
         self.main_window, self.main_layout = self.add_window(self.window_title)
 
+        self.process_selected_checkbox = self.add_checkbox("Only process selected objects.", False)
+
+        self.add_separator()
+
         self.rename_checkbox = self.add_checkbox("Rename objects", self.bool_rename)
         self.rename_checkbox_addons()
         self.rename_checkbox.stateChanged.connect(self.toggle_rename_controls)
+        self.process_selected_checkbox.stateChanged.connect(self.toggle_rename_controls)
 
         self.add_separator()
 
@@ -86,7 +93,10 @@ class UIWindow:
         self.export_file_path.setText(folder_directory) # set label to folder selected
 
     def export_func(self):
-        meshes_list = cmds.ls(type = "mesh")
+        if self.process_selected_checkbox.isChecked():
+            meshes_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True), type="mesh")
+        else:
+            meshes_list = cmds.ls(type="mesh")
         file_extension = " "
         file_type = " "
 
@@ -176,8 +186,11 @@ class UIWindow:
     def delete_history(self):
         """Function that deletes the history of objects in the scene."""
         if self.bool_history: #if checkbox is checked, the user wants to delete history
-            everything_list = cmds.ls(geometry=True) #list with everything from the scene
-
+            skipped = 0
+            if self.process_selected_checkbox.isChecked():
+                everything_list = cmds.ls(selection=True, long=True) #list with everything from the scene
+            else:
+                everything_list = cmds.ls(geometry=True)  # list with everything from the scene
             #first, it's checked if there are any exceptions set by user through the radio buttons
             if self.radio_buttons_history.checkedButton().text() == "None": #NO EXCEPTIONS, clears everything
                 for item in everything_list:
@@ -210,6 +223,7 @@ class UIWindow:
                                     if item in items_for_exceptions: #just so an item doesn't get added twice if it has two keywords in it
                                         pass
                                     else:
+                                        skipped += 1
                                         items_for_exceptions.append(item) #add items that are an exception to the array
                                 else:
                                     pass
@@ -227,7 +241,8 @@ class UIWindow:
                             cmds.delete(item, constructionHistory=True)
                         except:
                             pass  # just a safety net for nodes that you can't delete history on
-
+                    successful = len(everything_list) - skipped
+                    print(f"Deleted the history of {successful} items. Skipped {skipped} items due to user exceptions.")
         else: #if not, pass
             pass
 
@@ -257,7 +272,6 @@ class UIWindow:
         name_addition = name_addition.replace(" ", "_")
 
         skipped = 0  # how many items get skipped while renaming
-
         if name_addition == "":
             # it's empty so it won't do anything
             pass
@@ -282,7 +296,7 @@ class UIWindow:
                 cmds.rename(obj, f"{new_name}") # renaming in outliner
             if skipped > 0:
                 cmds.warning(f"Referenced {obj_type} cannot be renamed. {skipped} {obj_type} skipped.")
-
+            print(f"Renamed {len(object_list)} {obj_type}.")
 
     def rename_transforms(self, object_list: list, pref_or_suff: tuple, obj_type: str):
         """Renames using the transform nodes in Maya. Needs the list of objects, the menu choice for prefixes
@@ -300,7 +314,7 @@ class UIWindow:
         else:  # rename
             # give a warning if there are no objects of the type the user is trying to rename
             if not object_list:
-                cmds.warning(f"You set a naming convention for {obj_type} but there are none in your scene.")
+                cmds.warning(f"You set a naming convention for {obj_type} but none were found.")
                 return
             for obj in object_list:
                 # get transform node to rename it in outliner
@@ -321,73 +335,107 @@ class UIWindow:
                 cmds.rename(transform_node, f"{new_name}")  # renaming in outliner
             if skipped > 0:
                 cmds.warning(f"Referenced {obj_type} cannot be renamed. {skipped} {obj_type} skipped.")
+            print(f"Renamed {len(object_list)} {obj_type}.")
 
     def rename_joints(self):
         """Renames joints."""
-        joints_list = cmds.ls(type = "joint")
+        if self.process_selected_checkbox.isChecked():
+            joints_list = cmds.ls(selection=True, type="joint")
+        else:
+            joints_list = cmds.ls(type = "joint")
 
         self.rename_no_transform(joints_list, self.pref_or_suff_joints,"joints")
 
     def rename_layers(self):
         """Renames layers."""
-        display_layers_list = cmds.ls(type= "displayLayer")
-        display_layers_list.remove("defaultLayer")
+        if self.process_selected_checkbox.isChecked():
+            pass
+        else:
+            display_layers_list = cmds.ls(type= "displayLayer")
 
-        self.rename_no_transform(display_layers_list, self.pref_or_suff_layers, "layers")
+            display_layers_list.remove("defaultLayer")
+
+            self.rename_no_transform(display_layers_list, self.pref_or_suff_layers, "layers")
 
     def rename_materials(self):
         """Renames materials."""
-        default_materials = ["lambert1", "standardSurface1", "particleCloud1"]
-        materials_list = cmds.ls(materials=True)  # get all the materials in the scene
+        if self.process_selected_checkbox.isChecked():
+            pass
+        else:
+            default_materials = ["lambert1", "standardSurface1", "particleCloud1"]
+            materials_list = cmds.ls(materials=True)  # get all the materials in the scene
 
-        for mat in default_materials:
-            materials_list.remove(mat)
+            for mat in default_materials:
+                materials_list.remove(mat)
 
-        self.rename_no_transform(materials_list, self.pref_or_suff_mat, "materials")
+            self.rename_no_transform(materials_list, self.pref_or_suff_mat, "materials")
 
     def rename_ik_handles(self):
         """Renames IK handles."""
-        handles_list = cmds.ls(type = "ikHandle")
+        if self.process_selected_checkbox.isChecked():
+            handles_list = cmds.ls(selection=True, type="ikHandle")
+        else:
+            handles_list = cmds.ls(type = "ikHandle")
         self.rename_no_transform(handles_list, self.pref_or_suff_ik, "IK Handles")
 
     def rename_lights(self):
         """Renames lights."""
-        maya_lights_list = cmds.ls(type = "light")
-        arnold_lights_list = cmds.ls(exactType=['aiAreaLight', 'aiSkyDomeLight', 'aiMeshLight', 'aiPhotometricLight', 'aiLightPortal', 'aiPhysicalSky'])
+        if self.process_selected_checkbox.isChecked():
+            maya_lights_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True), type = "light")
+            arnold_lights_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True),
+                exactType=['aiAreaLight', 'aiSkyDomeLight', 'aiMeshLight', 'aiPhotometricLight', 'aiLightPortal',
+                           'aiPhysicalSky'])
+        else:
+            maya_lights_list = cmds.ls(type = "light")
+            arnold_lights_list = cmds.ls(exactType=['aiAreaLight', 'aiSkyDomeLight', 'aiMeshLight', 'aiPhotometricLight',
+                                                    'aiLightPortal', 'aiPhysicalSky'])
+
         lights_list = maya_lights_list + arnold_lights_list
 
         self.rename_transforms(lights_list, self.pref_or_suff_lights, "lights")
 
     def rename_curves(self):
         """Renames curves."""
-        curves_list = cmds.ls(type = "nurbsCurve")
+        if self.process_selected_checkbox.isChecked():
+            curves_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True),type="nurbsCurve")
+        else:
+            curves_list = cmds.ls(type = "nurbsCurve")
 
         self.rename_transforms(curves_list, self.pref_or_suff_curves, "curves")
 
     def rename_geo(self):
         """Renames geometry."""
-        geo_list = cmds.ls(type = "mesh")
+        if self.process_selected_checkbox.isChecked():
+            geo_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True), type="mesh")
+        else:
+            geo_list = cmds.ls(type = "mesh")
 
         self.rename_transforms(geo_list, self.pref_or_suff_geo, "meshes")
 
     def rename_cameras(self):
         """Renames cameras."""
-        default_cameras = ["frontShape", "perspShape", "sideShape", "topShape", "bottomShape", "leftShape", "backShape"]
-        cameras_list = cmds.ls(cameras=True) #get all the cameras in the scene
+        if self.process_selected_checkbox.isChecked():
+            cameras_list = cmds.ls(cmds.ls(selection=True, dagObjects=True, shapes=True), cameras=True)
+        else:
+            cameras_list = cmds.ls(cameras=True) #get all the cameras in the scene
+            default_cameras = ["frontShape", "perspShape", "sideShape", "topShape", "bottomShape", "leftShape", "backShape"]
 
-        #remove the default cameras made by maya from the list
-        for cam in default_cameras:
-            try: #try because bottom, left and back aren't automatically created with the scene, to avoid issues
-                cameras_list.remove(cam)
-            except:
-                pass
+            #remove the default cameras made by maya from the list
+            for cam in default_cameras:
+                try: #try because bottom, left and back aren't automatically created with the scene, to avoid issues
+                    cameras_list.remove(cam)
+                except:
+                    pass
 
         self.rename_transforms(cameras_list, self.pref_or_suff_cams, "cameras")
 
     def rename_groups(self):
         """Renames groups."""
         # get all the groups in the scene and put them in a list
-        transforms = cmds.ls(transforms=True)  # gets all transform nodes in the scene (includes groups)
+        if self.process_selected_checkbox.isChecked():
+            transforms = cmds.ls(selection=True, type="transform")
+        else:
+            transforms = cmds.ls(transforms=True)  # gets all transform nodes in the scene (includes groups)
         # create lists for what would be taken as a group but actually isn't, then remove it from the group list
         joints = cmds.ls(type="joint")
         ik_handles = cmds.ls(type = "ikHandle")
@@ -439,6 +487,7 @@ class UIWindow:
                         cmds.rename(group, f"{new_name}")  # renaming in outliner
                 if skipped > 0 :
                     cmds.warning(f"Referenced groups cannot be renamed. {skipped} groups skipped.")
+                print(f"Renamed {len(groups_list)} groups.")
 
 
     #CREATING BACKUP FUNCTION
@@ -511,15 +560,27 @@ class UIWindow:
                                                                        self.bool_rename)
 
         #add everything in list to use for enabling/disabling
-        self.rename_widgets_list = [geo, self.pref_or_suff_geo, curves, self.pref_or_suff_curves, mat,
-                                    self.pref_or_suff_mat, cams, self.pref_or_suff_cams, lights,
-                                    self.pref_or_suff_lights, groups, self.pref_or_suff_groups, layers,
-                                    self.pref_or_suff_layers, joints, self.pref_or_suff_joints, ik,
+        self.rename_widgets_list = [geo, self.pref_or_suff_geo, curves, self.pref_or_suff_curves, cams,
+                                    self.pref_or_suff_cams, lights, self.pref_or_suff_lights, groups,
+                                    self.pref_or_suff_groups, joints, self.pref_or_suff_joints, ik,
                                     self.pref_or_suff_ik]
+
+        #if selection mode is enabled, user cannot select layers or materials so those boxes get greyed out, this does that
+        self.disabled_for_selection_mode = [mat, self.pref_or_suff_mat, layers, self.pref_or_suff_layers]
 
     def toggle_rename_controls(self):
         """Gets called when the state of the rename checkbox is changed, it enables or disables options."""
         self.bool_rename = self.rename_checkbox.isChecked() #set it the same as the checkbox
+
+        if self.bool_rename:
+            """Logic here is that if self.bool_rename is true, it will check if selection mode is active. If it is,
+            it will disable/enable materials and display layers based on that. If it's false, it just keeps
+            selection_mode false as well."""
+            selection_mode = not self.process_selected_checkbox.isChecked()
+            if not selection_mode:
+                cmds.warning("Materials and display layers can't be renamed in selection mode.")
+        else:
+            selection_mode = False
 
         for item in self.rename_widgets_list:
             try:
@@ -527,6 +588,14 @@ class UIWindow:
             except:
                 item[0].setEnabled(self.bool_rename)  # change dropdown
                 item[1].setEnabled(self.bool_rename)  # change text box
+
+        for item in self.disabled_for_selection_mode:
+            try:
+                item.setEnabled(selection_mode) # change label
+            except:
+                item[0].setEnabled(selection_mode)  # change dropdown
+                item[1].setEnabled(selection_mode)  # change text box
+
 
 
     #CLEAR HISTORY
@@ -594,82 +663,6 @@ class UIWindow:
                 for button in item.buttons():  # it's radio buttons
                     button.setEnabled(self.bool_history) #does it for each button individually
 
-
-    #GROUP
-    def create_groups_checkbox_addons(self):
-        """All the extra options for grouping."""
-        options = ["Group by type", "Group by naming convention"]
-
-        choice_text = self.add_label("Choose how to create groups:", self.bool_group)
-        self.dropdown_create_groups = self.add_dropdown_menu(options, self.bool_group)
-
-        self.group_widgets_list = [choice_text, self.dropdown_create_groups]
-
-        self.grouping_options()
-
-    def grouping_options(self):
-        """Adds an explanation and example for the user's choice and lets the user choose what to do with the existing
-         groups."""
-        # BY TYPE
-        explanation_type = self.add_label("This will group all the same types together. \n"
-                                          "e.g.: all lights together, all meshes together",
-                                          False)
-
-        # BY NAME
-        explanation_name = self.add_label("This will group all with the same suffixes or prefixes together. \n"
-                                          "e.g.: everything with the prefix 'GEO_' will be in the same group",
-                                          False)
-        #choice to group by prefix or suffix
-        self.pref_or_suff_grp = self.add_radio_buttons(["Group by prefix", "Group by suffix"], self.bool_group)
-
-        self.add_label(" ", True)  # added a space
-
-        #put them in list to hide/show them
-        self.grouping_explanations_list = [explanation_type, explanation_name, self.pref_or_suff_grp]
-
-        explanation_type.show()
-        explanation_name.hide()
-        for button in self.pref_or_suff_grp.buttons():
-            button.setVisible(False)
-
-        self.dropdown_create_groups.currentTextChanged.connect(self.show_selected_explanation)
-
-        #choose what to do with existing groups
-        options = ["Dissolve", "Keep", "Combine and delete history"]
-        existing_groups_handling_label = self.add_label("Choose what to do with existing groups:",
-                                                        self.bool_group)
-        self.existing_groups_radio_buttons = self.add_radio_buttons(options, self.bool_group)
-        self.add_label("If there are no groups existent, select 'Dissolve'.", False)
-
-        #append them to enable/disable them
-        self.group_widgets_list.append(existing_groups_handling_label)
-        self.group_widgets_list.append(self.existing_groups_radio_buttons)
-
-    def show_selected_explanation(self, text):
-        '''Only shows the explanation for the selected option.'''
-        if text == "Group by type":
-            self.grouping_explanations_list[0].show()
-            self.grouping_explanations_list[1].hide()
-            for button in self.grouping_explanations_list[2].buttons():
-                button.setVisible(False)
-        elif text == "Group by naming convention":
-            self.grouping_explanations_list[0].hide()
-            self.grouping_explanations_list[1].show()
-            for button in self.grouping_explanations_list[2].buttons():
-                button.setVisible(True)
-
-    def toggle_grouping_controls(self):
-        """Gets called when the state of the grouping checkbox is changed, it enables or disables options."""
-        self.bool_group = self.create_groups_checkbox.isChecked()
-
-        for widget in self.group_widgets_list:
-            try:
-                widget.setEnabled(self.bool_group)
-            except:
-                for button in widget.buttons():
-                    button.setEnabled(self.bool_group)
-
-
     #BACKUP
     def backup_denial_warning_show(self):
         self.bool_backup = self.backup_option.isChecked()
@@ -703,9 +696,8 @@ class UIWindow:
         """Returns window, needs the window's name."""
         window = QWidget()
         window.setWindowTitle(title)
-        #for the window to always stay on top, for this line of code I give credits to ChatGPT
-        window.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
-        window.setMinimumSize(350, 850)
+        window.setWindowFlags(Qt.Window)
+        window.setMinimumSize(325, 900)
         layout = QVBoxLayout()
         window.setLayout(layout)
         return window, layout
