@@ -1,13 +1,12 @@
 # Scene Cleaner for Autodesk Maya
 
-**Scene Cleaner** is a powerful script designed to streamline your Maya workflow — from quick scene tidying to optimized exports for game engines and online sharing. Whether you're working under tight
-deadlines or prepping assets for Unreal, this tool helps you stay organized with minimal hassle.
+**Scene Cleaner** is a powerful script designed to streamline your Maya workflow! From quick scene tidying to optimized exports for game engines and online sharing. Whether you're working under tight deadlines or prepping assets for export to another program, this tool helps you stay organized with minimal hassle.
 ---
 
 ## Perfect For:
 - Quick scene organization under tight deadlines
-- Effortless mesh exports — ideal for moving assets into Unreal Engine
-- Streamlined full-scene exports — great for sharing work online
+- Effortless separate mesh exports, ideal for moving assets into another program
+- Streamlined full-scene exports, great for sharing work online
 
 ---
 
